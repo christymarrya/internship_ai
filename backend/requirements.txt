@@ -49,6 +49,7 @@ openai==1.55.3
 packaging==26.0
 pdfminer.six==20231228
 pdfplumber==0.11.4
+fpdf2==2.8.3
 pillow==12.1.1
 pluggy==1.6.0
 postgrest==1.1.1

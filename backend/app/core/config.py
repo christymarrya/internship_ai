@@ -12,17 +12,16 @@ class Settings(BaseSettings):
     # ── App ──────────────────────────────────────────────────
     PROJECT_NAME: str = "AI Internship Discovery Backend"
     VERSION: str = "1.0.0"
-    ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    ENVIRONMENT: str = "production"
+    DEBUG: bool = False
 
     # ── Server ───────────────────────────────────────────────
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    ALLOWED_ORIGINS: List[str] = ["*"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
 
     # ── Security ─────────────────────────────────────────────
-    # WARNING: Change SECRET_KEY in production!
-    SECRET_KEY: str = "intelai_default_secret_key_8h2j8k9l0m1p2q3r"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
 
@@ -33,12 +32,12 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str = ""
 
     # ── OpenAI / LLM ─────────────────────────────────────────
-    OPENAI_API_KEY: str = "your-openai-api-key"
+    OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
 
     # ── Apify (Real Internship Scraping) ──────────────────────
-    APIFY_API_KEY: str = "your-apify-api-key"
+    APIFY_API_KEY: str = ""
 
     # ── Embedding Model ───────────────────────────────────────
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"  # SentenceTransformer model

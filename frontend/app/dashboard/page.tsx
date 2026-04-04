@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { CORE_API_BASE_URL } from '@/lib/api'
 
 export default function DashboardPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -56,7 +57,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/analyze", {
+      const response = await fetch(`${CORE_API_BASE_URL}/analyze`, {
         method: "POST",
         headers: {
           ...(userId ? { "Authorization": `Bearer ${userId}` } : {})

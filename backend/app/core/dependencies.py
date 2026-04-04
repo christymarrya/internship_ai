@@ -11,14 +11,10 @@ from app.services.faiss_service import FAISSService
 from app.services.llm_service import LLMService
 from app.services.resume_parser import ResumeParserService
 from app.core.config import settings
-from app.core.config import settings
 from supabase_client import supabase
 from pydantic import BaseModel
-from app.models.schemas import TokenData
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
-from jwt.exceptions import PyJWTError
 
 
 @lru_cache()

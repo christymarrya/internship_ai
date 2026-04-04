@@ -96,5 +96,13 @@ test.pdf
 backend/test.pdf
 frontend/public/*.pdf
 
+# Runtime backend data (keep directories only)
+backend/data/uploads/*
+backend/data/faiss_index/*
+backend/data/*.db
+backend/data/*.sqlite*
+!backend/data/uploads/.gitkeep
+!backend/data/faiss_index/.gitkeep
+
 # Misc
 .vercel/

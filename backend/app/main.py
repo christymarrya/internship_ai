@@ -3,9 +3,8 @@ main.py — Application entry point.
 Initializes FastAPI app, registers routers, configures CORS, and mounts middleware.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
 from app.api.endpoints import resume, matching, cover_letter, rag, profile, auth, internships, workflow, analyze, email, pdf
 from app.core.config import settings
@@ -67,14 +66,3 @@ async def root():
 def health_check():
     """Health check endpoint to verify the API is running."""
     return {"status": "healthy", "service": "InternAI Backend"}
-
-@app.get("/test-db")
-def test_db():
-    """Fetch all users from Supabase to test database connection."""
-    from supabase_client import supabase
-    try:
-        response = supabase.table("users").select("*").execute()
-        return response.data if response.data else []
-    except Exception as e:
-        logger.error(f"test-db error: {e}")
-        raise HTTPException(status_code=500, detail="Database query failed")

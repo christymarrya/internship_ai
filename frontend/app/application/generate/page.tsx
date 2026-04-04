@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { generateApplication } from '@/lib/api'
+import { API_BASE_URL, generateApplication } from '@/lib/api'
 
 export default function ApplicationGenerationPage() {
   const [internshipData, setInternshipData] = useState<any>(null)
@@ -58,7 +58,7 @@ export default function ApplicationGenerationPage() {
   const handleSendEmail = async (subject: string, body: string, company: string) => {
     setIsSending(true);
     try {
-        const response = await fetch("http://127.0.0.1:8000/api/v1/email/send", {
+        const response = await fetch(`${API_BASE_URL}/email/send`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -78,7 +78,7 @@ export default function ApplicationGenerationPage() {
 
   const handleDownloadPDF = async (markdown: string, company: string) => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/v1/pdf/generate", {
+      const response = await fetch(`${API_BASE_URL}/pdf/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
