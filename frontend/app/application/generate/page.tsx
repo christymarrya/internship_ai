@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { API_BASE_URL, generateApplication, updateGeneratedMaterials, type GeneratedMaterials } from '@/lib/api'
+import { API_BASE_URL, generateApplication, updateGeneratedMaterials, type GeneratedMaterials } from '../../../lib/api'
 
 export default function ApplicationGenerationPage() {
   const [internshipData, setInternshipData] = useState<any>(null)

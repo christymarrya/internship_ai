@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { runWorkflow, ApplicationPackage, getAppliedInternships } from '@/lib/api'
-import { getBestApplicationUrl } from '@/lib/internship-links'
+import { runWorkflow, ApplicationPackage, getAppliedInternships } from '../../lib/api'
+import { getBestApplicationUrl } from '../../lib/internship-links'
 
 export default function InternshipsPage() {
   const [preferredField, setPreferredField] = useState('')

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { API_BASE_URL } from "@/lib/api"
+import { API_BASE_URL } from "../../lib/api"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")

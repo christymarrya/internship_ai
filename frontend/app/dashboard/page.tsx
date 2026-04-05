@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { CORE_API_BASE_URL, runWorkflow } from '@/lib/api'
-import { getOriginalApplicationUrl, getSearchFirstApplicationUrl } from '@/lib/internship-links'
+import { CORE_API_BASE_URL, runWorkflow } from '../../lib/api'
+import { getOriginalApplicationUrl, getSearchFirstApplicationUrl } from '../../lib/internship-links'
 
 const STORAGE_KEYS = {
   resumeId: "internai_resume_id",
