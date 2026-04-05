@@ -9,6 +9,11 @@ from app.services.scraper import fetch_internshala_internships
 router = APIRouter()
 logger = get_logger(__name__)
 
+
+def build_search_link(company: str, role: str, location: str) -> str:
+    query = " ".join(part for part in [company, role, "internship", "careers", location] if part)
+    return f"https://www.google.com/search?q={query.replace(' ', '+')}"
+
 @router.get("/", response_model=List[InternshipResponse])
 def get_all_internships():
     """Fetch all available internships from API."""
@@ -81,7 +86,7 @@ def search_internships_manually(query: str, location: str = "Remote", max_items:
                     "company": company,
                     "location": loc,
                     "description": desc[:2000],
-                    "application_link": link
+                    "application_link": link or build_search_link(company, role, loc)
                 })
         
         return internships
@@ -100,7 +105,11 @@ def search_internships_manually(query: str, location: str = "Remote", max_items:
                         "company": item.get("companyName", "Unknown"),
                         "location": item.get("location", "Remote"),
                         "description": item.get("description", "No description.")[:2000],
-                        "application_link": item.get("jobUrl", item.get("url", ""))
+                        "application_link": item.get("jobUrl", item.get("url", "")) or build_search_link(
+                            item.get("companyName", "Unknown"),
+                            item.get("title", "Intern"),
+                            item.get("location", "Remote"),
+                        )
                     })
             if internships:
                 return internships
@@ -115,20 +124,20 @@ def search_internships_manually(query: str, location: str = "Remote", max_items:
                 "company": "Tech Innovations Inc.",
                 "location": location,
                 "description": f"We are looking for a highly motivated {query} intern to join our innovative team in {location}.",
-                "application_link": f"https://www.google.com/search?q={query}+internship+{location}"
+                "application_link": build_search_link("Tech Innovations Inc.", f"{query} Intern", location)
             },
             {
                 "role": f"Junior {query} (Simulated)",
                 "company": "Global Systems Group",
                 "location": location,
                 "description": f"A fantastic opportunity for a budding {query} professional to gain hands-on experience.",
-                "application_link": f"https://www.google.com/search?q={query}+internship+{location}"
+                "application_link": build_search_link("Global Systems Group", f"Junior {query}", location)
             },
             {
                 "role": f"{query} Analyst (Simulated)",
                 "company": "DataCorp Ltd",
                 "location": "Remote",
                 "description": f"Work directly with senior developers and {query} experts to build production systems.",
-                "application_link": f"https://www.google.com/search?q={query}+internship+Remote"
+                "application_link": build_search_link("DataCorp Ltd", f"{query} Analyst", "Remote")
             }
         ]

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { runWorkflow, ApplicationPackage, getAppliedInternships } from '@/lib/api'
+import { getBestApplicationUrl } from '@/lib/internship-links'
 
 export default function InternshipsPage() {
   const [preferredField, setPreferredField] = useState('')
@@ -170,7 +171,7 @@ export default function InternshipsPage() {
                                 setError("Please upload your resume first!");
                                 return;
                             }
-                            window.open(`https://www.google.com/search?q=${encodeURIComponent(app.internship.company + " careers internships")}`, '_blank');
+                            window.open(getBestApplicationUrl(app.internship), '_blank', 'noopener,noreferrer');
                             localStorage.setItem("selected_internship", JSON.stringify({
                                 resume_id: resumeId,
                                 internship: app.internship,

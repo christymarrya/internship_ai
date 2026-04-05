@@ -18,6 +18,11 @@ from app.agents.email_agent import EmailAgent
 
 logger = get_logger(__name__)
 
+
+def build_search_link(company: str, role: str, location: str) -> str:
+    query = " ".join(part for part in [company, role, "internship", "careers", location] if part)
+    return f"https://www.google.com/search?q={query.replace(' ', '+')}"
+
 class ApplicationWorkflow:
     """
     Orchestrates the multi-agent pipeline:
@@ -245,9 +250,10 @@ class ApplicationWorkflow:
                 "company": "Company Name",
                 "location": "Location",
                 "description": "Short job description including required skills.",
-                "application_link": "https://example.com/apply"
+                "application_link": "https://company-careers-page.example/job-posting"
             }}
         ]
+        Use a real company careers/job URL when known. If unknown, return an empty string.
         """
         response = self.llm.generate(prompt=prompt, temperature=0.7)
         
@@ -258,7 +264,25 @@ class ApplicationWorkflow:
             
         try:
             data = json.loads(response.strip())
-            return [InternshipListing(**item) for item in data]
+            internships = []
+            for item in data:
+                application_link = item.get("application_link", "")
+                if not application_link or "example.com" in application_link:
+                    application_link = build_search_link(
+                        item.get("company", ""),
+                        item.get("role", ""),
+                        item.get("location", ""),
+                    )
+
+                internships.append(InternshipListing(
+                    role=item.get("role", "Intern"),
+                    company=item.get("company", "Unknown"),
+                    location=item.get("location", "Remote"),
+                    description=item.get("description", "No description."),
+                    application_link=application_link,
+                ))
+
+            return internships
         except Exception as e:
             logger.error(f"Failed to parse InternshipListing JSON: {e}")
             return []

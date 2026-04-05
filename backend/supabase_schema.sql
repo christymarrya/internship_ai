@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS public.applications (
     reasoning TEXT,
     cover_letter TEXT,
     tailored_resume TEXT,
+    email_subject TEXT,
     email_body TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );

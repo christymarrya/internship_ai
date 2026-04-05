@@ -38,7 +38,16 @@ class ApplicationGenerationRequest(BaseModel):
     reasoning: str
 
 class GeneratedMaterialsResponse(BaseModel):
+    application_id: Optional[str] = None
     cover_letter: Optional[str] = None
     tailored_resume: Optional[str] = None
+    email_subject: Optional[str] = None
+    email_body: Optional[str] = None
+
+
+class UpdateGeneratedMaterialsRequest(BaseModel):
+    application_id: str
+    tailored_resume: Optional[str] = None
+    cover_letter: Optional[str] = None
     email_subject: Optional[str] = None
     email_body: Optional[str] = None

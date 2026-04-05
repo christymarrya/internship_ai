@@ -9,7 +9,12 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.dependencies import get_current_user, UserSchema, get_resume_parser, get_llm_service, get_embedding_service, get_faiss_service
 from app.models.schemas import ParsedResume
-from app.models.agent_schemas import FinalApplicationPackage, ApplicationGenerationRequest, GeneratedMaterialsResponse
+from app.models.agent_schemas import (
+    FinalApplicationPackage,
+    ApplicationGenerationRequest,
+    GeneratedMaterialsResponse,
+    UpdateGeneratedMaterialsRequest,
+)
 from app.models.store import resume_store
 
 from app.services.resume_parser import ResumeParserService
@@ -52,6 +57,40 @@ def get_application_workflow(
     email_ag=Depends(get_email_agent)
 ) -> ApplicationWorkflow:
     return ApplicationWorkflow(llm, matcher, cover_letter_gen, tailor, email_ag)
+
+
+def _persist_application_record(payload: dict):
+    try:
+        return supabase.table("applications").insert(payload).execute()
+    except Exception as db_err:
+        if "email_subject" in payload:
+            logger.warning(f"Retrying application insert without email_subject: {db_err}")
+            fallback_payload = {k: v for k, v in payload.items() if k != "email_subject"}
+            return supabase.table("applications").insert(fallback_payload).execute()
+        raise
+
+
+def _update_application_record(application_id: str, user_id: str, payload: dict):
+    try:
+        return (
+            supabase.table("applications")
+            .update(payload)
+            .eq("id", application_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+    except Exception as db_err:
+        if "email_subject" in payload:
+            logger.warning(f"Retrying application update without email_subject: {db_err}")
+            fallback_payload = {k: v for k, v in payload.items() if k != "email_subject"}
+            return (
+                supabase.table("applications")
+                .update(fallback_payload)
+                .eq("id", application_id)
+                .eq("user_id", user_id)
+                .execute()
+            )
+        raise
 
 
 @router.post("/analyze", response_model=FinalApplicationPackage)
@@ -142,8 +181,9 @@ async def generate_application(
         )
         
         # Store complete application in DB
+        application_id = None
         try:
-            supabase.table("applications").insert({
+            insert_response = _persist_application_record({
                 "user_id": current_user.id,
                 "company": request.internship.company,
                 "role": request.internship.role,
@@ -151,14 +191,46 @@ async def generate_application(
                 "reasoning": request.reasoning,
                 "cover_letter": materials.cover_letter,
                 "tailored_resume": materials.tailored_resume,
+                "email_subject": materials.email_subject,
                 "email_body": materials.email_body,
                 "created_at": datetime.utcnow().isoformat()
-            }).execute()
+            })
+            if insert_response.data:
+                application_id = insert_response.data[0].get("id")
         except Exception as db_err:
             logger.warning(f"Failed to store application record for {request.internship.company}: {db_err}")
 
+        materials.application_id = application_id
         return materials
         
     except Exception as e:
         logger.error(f"Generation pipeline failed: {e}")
         raise HTTPException(status_code=500, detail=f"Internal error during generation: {str(e)}")
+
+
+@router.put("/application-materials")
+async def update_generated_materials(
+    request: UpdateGeneratedMaterialsRequest,
+    current_user: UserSchema = Depends(get_current_user),
+):
+    payload = {
+        "tailored_resume": request.tailored_resume,
+        "cover_letter": request.cover_letter,
+        "email_subject": request.email_subject,
+        "email_body": request.email_body,
+    }
+
+    try:
+        response = _update_application_record(request.application_id, current_user.id, payload)
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Application record not found.")
+
+        return {
+            "status": "success",
+            "application_id": request.application_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update generated materials: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save edited materials: {str(e)}")

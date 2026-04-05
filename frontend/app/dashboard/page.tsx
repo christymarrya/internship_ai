@@ -7,7 +7,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { CORE_API_BASE_URL } from '@/lib/api'
+import { CORE_API_BASE_URL, runWorkflow } from '@/lib/api'
+import { getOriginalApplicationUrl, getSearchFirstApplicationUrl } from '@/lib/internship-links'
+
+const STORAGE_KEYS = {
+  resumeId: "internai_resume_id",
+  results: "internai_dashboard_results",
+  field: "internai_preferred_field",
+  location: "internai_location",
+  fileName: "internai_resume_file_name",
+}
 
 export default function DashboardPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -17,36 +26,76 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sendingId, setSendingId] = useState<number | null>(null)
+  const [savedResumeId, setSavedResumeId] = useState<string | null>(null)
+  const [savedResumeName, setSavedResumeName] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     const userId = localStorage.getItem("user_id")
     if (!userId) {
       router.replace('/login')
+      return
+    }
+
+    const storedResumeId = localStorage.getItem(STORAGE_KEYS.resumeId)
+    const storedResults = localStorage.getItem(STORAGE_KEYS.results)
+    const storedField = localStorage.getItem(STORAGE_KEYS.field)
+    const storedLocation = localStorage.getItem(STORAGE_KEYS.location)
+    const storedFileName = localStorage.getItem(STORAGE_KEYS.fileName)
+
+    if (storedResumeId) setSavedResumeId(storedResumeId)
+    if (storedFileName) setSavedResumeName(storedFileName)
+    if (storedField) setPreferredField(storedField)
+    if (storedLocation) setLocation(storedLocation)
+
+    if (storedResults) {
+      try {
+        setResults(JSON.parse(storedResults))
+      } catch {
+        localStorage.removeItem(STORAGE_KEYS.results)
+      }
     }
   }, [router])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0])
+      setSavedResumeName(e.target.files[0].name)
     }
+  }
+
+  const persistDashboardState = (data: any, resumeId?: string, fileName?: string | null) => {
+    localStorage.setItem(STORAGE_KEYS.results, JSON.stringify(data))
+    localStorage.setItem(STORAGE_KEYS.field, preferredField)
+    localStorage.setItem(STORAGE_KEYS.location, location)
+
+    if (resumeId) {
+      localStorage.setItem(STORAGE_KEYS.resumeId, resumeId)
+      setSavedResumeId(resumeId)
+    }
+
+    if (fileName) {
+      localStorage.setItem(STORAGE_KEYS.fileName, fileName)
+      setSavedResumeName(fileName)
+    }
+  }
+
+  const clearSavedResume = () => {
+    setFile(null)
+    setResults(null)
+    setSavedResumeId(null)
+    setSavedResumeName(null)
+    setError(null)
+    localStorage.removeItem(STORAGE_KEYS.resumeId)
+    localStorage.removeItem(STORAGE_KEYS.results)
+    localStorage.removeItem(STORAGE_KEYS.fileName)
   }
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!file) {
-      setError("Please select a resume PDF to upload.")
-      return
-    }
-
     setIsLoading(true)
     setError(null)
     setResults(null)
-
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("preferred_field", preferredField)
-    formData.append("location", location)
 
     const userId = typeof window !== 'undefined' ? localStorage.getItem("user_id") : null
 
@@ -57,26 +106,38 @@ export default function DashboardPage() {
     }
 
     try {
-      const response = await fetch(`${CORE_API_BASE_URL}/analyze`, {
-        method: "POST",
-        headers: {
-          ...(userId ? { "Authorization": `Bearer ${userId}` } : {})
-        },
-        body: formData,
-      })
+      if (file) {
+        const formData = new FormData()
+        formData.append("file", file)
+        formData.append("preferred_field", preferredField)
+        formData.append("location", location)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || "Analysis failed.")
+        const response = await fetch(`${CORE_API_BASE_URL}/analyze`, {
+          method: "POST",
+          headers: {
+            ...(userId ? { "Authorization": `Bearer ${userId}` } : {})
+          },
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.detail || "Analysis failed.")
+        }
+
+        const data = await response.json()
+        setResults(data)
+        persistDashboardState(data, data.resume_id, file.name)
+        return
       }
 
-      const data = await response.json()
+      if (!savedResumeId) {
+        throw new Error("Please upload a resume PDF once. After that, you can reuse it without uploading again.")
+      }
+
+      const data = await runWorkflow(savedResumeId, preferredField, location)
       setResults(data)
-      
-      // Save global resume ID so the Internships tab can seamlessly run new queries!
-      if (data.resume_id) {
-        localStorage.setItem("internai_resume_id", data.resume_id)
-      }
+      persistDashboardState(data, savedResumeId, savedResumeName)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -86,7 +147,7 @@ export default function DashboardPage() {
 
   const handleApply = (app: any, resumeId: string) => {
     if (typeof window !== 'undefined') {
-      window.open(`https://www.google.com/search?q=${encodeURIComponent(app.internship.company + " careers internships")}`, '_blank');
+      window.open(getSearchFirstApplicationUrl(app.internship), '_blank', 'noopener,noreferrer');
       localStorage.setItem("selected_internship", JSON.stringify({
         internship: app.internship,
         match_score: app.match_evaluation.match_score,
@@ -148,6 +209,11 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                       <Label htmlFor="resume" className="font-semibold text-slate-700">Resume Document (PDF)</Label>
                       <Input id="resume" type="file" accept=".pdf" onChange={handleFileChange} className="cursor-pointer file:text-primary file:font-semibold bg-white" />
+                      {savedResumeId && (
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                          Using saved resume session{savedResumeName ? `: ${savedResumeName}` : ""}. You only need to upload again if you want to replace it.
+                        </div>
+                      )}
                     </div>
                     
                     <div className="space-y-2 pt-2">
@@ -176,10 +242,15 @@ export default function DashboardPage() {
 
                     {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-md font-medium mt-4">{error}</div>}
 
-                    <div className="pt-4">
-                      <Button type="submit" className="w-full py-6 text-md font-bold transition-all shadow-md hover:shadow-xl" disabled={isLoading || !file}>
-                        {isLoading ? "Running Pipeline..." : "Analyze & Draft Apps"}
+                    <div className="pt-4 space-y-3">
+                      <Button type="submit" className="w-full py-6 text-md font-bold transition-all shadow-md hover:shadow-xl" disabled={isLoading || (!file && !savedResumeId)}>
+                        {isLoading ? "Running Pipeline..." : file ? "Analyze & Draft Apps" : "Reuse Saved Resume"}
                       </Button>
+                      {savedResumeId && (
+                        <Button type="button" variant="outline" className="w-full" onClick={clearSavedResume}>
+                          Replace Saved Resume
+                        </Button>
+                      )}
                     </div>
                   </form>
                 </CardContent>
